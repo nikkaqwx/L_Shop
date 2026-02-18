@@ -6,7 +6,7 @@ import {
     getGenres,
     getConditions,
     getFilterOptions
-} from '../controllers/productController';
+} from '../controllers/productcController';
 
 const router = Router();
 
