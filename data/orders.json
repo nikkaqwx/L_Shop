@@ -1,0 +1,30 @@
+[
+  {
+    "id": "fe4f389a-4bee-4d0c-b15e-8360c5d75ebd",
+    "userId": "a815f1a1-5df4-4208-95bf-893ac304669e",
+    "items": [
+      {
+        "productId": "2",
+        "quantity": 1,
+        "price": 24.99,
+        "productTitle": "Kind of Blue",
+        "productArtist": "Miles Davis"
+      }
+    ],
+    "totalAmount": 30.98,
+    "shippingAddress": {
+      "street": "ул.Леонида Щемелёва, д.18",
+      "city": "Минск",
+      "country": "Беларусь",
+      "zipCode": "123",
+      "phone": "+375 (33) 991-87-69",
+      "email": "mirkevichnika18@gmail.com",
+      "firstName": "nikkaqwx",
+      "lastName": "Миркевич"
+    },
+    "paymentMethod": "card",
+    "status": "pending",
+    "createdAt": "2026-02-18T17:12:05.630Z",
+    "shippingCost": 5.99
+  }
+]

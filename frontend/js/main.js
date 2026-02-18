@@ -202,7 +202,7 @@ async function renderApp() {
         
         <footer class="bg-dark text-white py-4 mt-5">
             <div class="container text-center">
-                <p>&copy; 2024 VinylShop. Все права защищены.</p>
+                <p>&copy; 2026 VinylShop. Все права защищены.</p>
             </div>
         </footer>
         
