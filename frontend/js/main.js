@@ -86,10 +86,8 @@ async function loadProducts() {
         if (AppState.filters.minYear) params.append('minYear', AppState.filters.minYear);
         if (AppState.filters.maxYear) params.append('maxYear', AppState.filters.maxYear);
         if (AppState.filters.sort) params.append('sort', AppState.filters.sort);
-        
         const queryString = params.toString();
         const url = queryString ? `/api/products?${queryString}` : '/api/products';
-        
         const response = await fetch(url);
         if (response.ok) {
             AppState.products = await response.json();
@@ -101,7 +99,6 @@ async function loadProducts() {
 
 async function loadCart() {
     if (!AppState.user) return;
-    
     try {
         const response = await fetch(`/api/cart?userId=${AppState.user.id}`, {
             credentials: 'include'
@@ -119,7 +116,6 @@ async function loadOrders() {
         AppState.orders = [];
         return;
     }
-    
     try {
         const response = await fetch(`/api/orders?userId=${AppState.user.id}`, {
             credentials: 'include'
@@ -138,7 +134,6 @@ async function loadOrders() {
 async function renderApp() {
     const app = document.getElementById('app');
     if (!app) return;
-
     app.innerHTML = `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
