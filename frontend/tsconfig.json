@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"target": "es2020",
+		"module": "es2020",
+		"lib": [
+			"es2020",
+			"dom"
+		],
+		"moduleResolution": "node",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"allowSyntheticDefaultImports": true,
+		"noImplicitAny": true,
+		"outDir": "../dist-frontend",
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			"*": [
+				"*",
+				"../node_modules/*"
+			]
+		}
+	},
+	"include": [
+		"**/*"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
