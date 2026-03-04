@@ -18,6 +18,35 @@ const AppState = {
     }
 };
 
+const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\' viewBox=\'0 0 400 400\'%3E%3Crect width=\'400\' height=\'400\' fill=\'%237c3aed\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-size=\'24\' font-family=\'Arial\'%3EVinyl%3C/text%3E%3C/svg%3E';
+
+function getProductImage(index, productTitle) {
+    const albumImages = {
+        'The Dark Side of the Moon': 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&h=600&fit=crop&auto=format',
+        'Kind of Blue': 'https://images.unsplash.com/photo-1598387993499-40ad4d2f5b6c?w=600&h=600&fit=crop&auto=format',
+        'Abbey Road': 'https://images.unsplash.com/photo-1571974599782-87624638275d?w=600&h=600&fit=crop&auto=format',
+        'Thriller': 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop&auto=format',
+        'Back in Black': 'https://images.unsplash.com/photo-1595769812725-4c6564f70466?w=600&h=600&fit=crop&auto=format',
+        'The Wall': 'https://images.unsplash.com/photo-1585771724680-0573be5850b6?w=600&h=600&fit=crop&auto=format',
+        'Blue': 'https://images.unsplash.com/photo-1566489564590-8d4cc8da00c4?w=600&h=600&fit=crop&auto=format',
+        'Led Zeppelin IV': 'https://images.unsplash.com/photo-1535666669445-e8c15cd2e7d9?w=600&h=600&fit=crop&auto=format'
+    };
+    
+    if (productTitle && albumImages[productTitle]) {
+        return albumImages[productTitle];
+    }
+    
+    const generalImages = [
+        'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&h=600&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=600&h=600&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1598387993499-40ad4d2f5b6c?w=600&h=600&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571974599782-87624638275d?w=600&h=600&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop&auto=format'
+    ];
+    
+    return generalImages[index % generalImages.length];
+}
+
 let currentPage = 'home';
 
 async function initApp() {
@@ -28,23 +57,60 @@ async function initApp() {
 
     try {
         app.innerHTML = `
-            <div class="loading">
-                <i class="fas fa-spinner fa-spin"></i> Загрузка...
+            <div class="loading text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <h3 class="mt-3">Загрузка приложения...</h3>
             </div>
         `;
 
+        try {
+            const healthCheck = await fetch('/api/health');
+            if (!healthCheck.ok) {
+                throw new Error('API не отвечает');
+            }
+            console.log('✅ API работает');
+        } catch (error) {
+            console.error('❌ API недоступен:', error);
+            app.innerHTML = `
+                <div class="container mt-5 text-center">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h3>Ошибка подключения к серверу</h3>
+                        <p>Убедитесь, что сервер запущен на порту 3000</p>
+                        <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+                            <i class="fas fa-redo me-2"></i>Обновить
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
         await Promise.all([
-            loadUser(),
-            loadFilterOptions(),
-            loadProducts(),
-            loadCart()
+            loadUser().catch(err => console.warn('Ошибка загрузки пользователя:', err)),
+            loadFilterOptions().catch(err => console.warn('Ошибка загрузки фильтров:', err)),
+            loadProducts().catch(err => console.warn('Ошибка загрузки товаров:', err)),
+            loadCart().catch(err => console.warn('Ошибка загрузки корзины:', err))
         ]);
 
         await renderApp();
         
     } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        app.innerHTML = '<h1 class="error">Ошибка загрузки приложения</h1>';
+        console.error('Критическая ошибка:', error);
+        app.innerHTML = `
+            <div class="container mt-5 text-center">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h3>Ошибка загрузки приложения</h3>
+                    <p>${error.message || 'Неизвестная ошибка'}</p>
+                    <button class="btn btn-primary mt-3" onclick="window.location.reload()">
+                        <i class="fas fa-redo me-2"></i>Обновить
+                    </button>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -86,9 +152,11 @@ async function loadProducts() {
         if (AppState.filters.minYear) params.append('minYear', AppState.filters.minYear);
         if (AppState.filters.maxYear) params.append('maxYear', AppState.filters.maxYear);
         if (AppState.filters.sort) params.append('sort', AppState.filters.sort);
+        
         const queryString = params.toString();
         const url = queryString ? `/api/products?${queryString}` : '/api/products';
         const response = await fetch(url);
+        
         if (response.ok) {
             AppState.products = await response.json();
         }
@@ -134,6 +202,7 @@ async function loadOrders() {
 async function renderApp() {
     const app = document.getElementById('app');
     if (!app) return;
+    
     app.innerHTML = `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
@@ -377,32 +446,8 @@ function renderProducts() {
         `;
     }
 
-const vinylImages = [
-    'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop&crop=center&auto=format', // Pink Floyd
-    'https://images.unsplash.com/photo-1598387993499-40ad4d2f5b6c?w=400&h=400&fit=crop&crop=center&auto=format', // Jazz
-    'https://images.unsplash.com/photo-1571974599782-87624638275d?w=400&h=400&fit=crop&crop=center&auto=format', // Beatles
-    'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 1
-    'https://images.unsplash.com/photo-1595769812725-4c6564f70466?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 2
-    'https://images.unsplash.com/photo-1585771724680-0573be5850b6?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 3
-    'https://images.unsplash.com/photo-1566489564590-8d4cc8da00c4?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 4
-    'https://images.unsplash.com/photo-1535666669445-e8c15cd2e7d9?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 5
-    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 6
-    'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 7
-    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 8
-    'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 9
-    'https://images.unsplash.com/photo-1598387993499-40ad4d2f5b6c?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 10
-    'https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 11
-    'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 12
-    'https://images.unsplash.com/photo-1573152143284-9ec0c5f67c3a?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 13
-    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 14
-    'https://images.unsplash.com/photo-1568667256531-7d5ac92e6a0f?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 15
-    'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&h=400&fit=crop&crop=center&auto=format', // Vinyl 16
-    'https://images.unsplash.com/photo-1587502536575-6dfba0a6e017?w=400&h=400&fit=crop&crop=center&auto=format'  // Vinyl 17
-];
-
     return AppState.products.map((product, index) => {
-        const imageIndex = index % vinylImages.length;
-        const imageUrl = vinylImages[imageIndex];
+        const imageUrl = getProductImage(index, product.title);
         
         return `
             <div class="col">
@@ -411,6 +456,7 @@ const vinylImages = [
                         <img src="${imageUrl}" 
                              class="card-img-top" 
                              alt="${product.title}"
+                             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=600&h=600&fit=crop&auto=format';"
                              style="height: 250px; object-fit: cover;">
                         ${!product.inStock ? `
                             <span class="badge bg-danger position-absolute top-0 end-0 m-2">Нет в наличии</span>
@@ -483,24 +529,13 @@ function renderCartPage() {
     const totalPrice = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = getTotalCartItems();
 
-    const vinylImages = [
-        'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1598387993499-40ad4d2f5b6c?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1571974599782-87624638275d?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1595769812725-4c6564f70466?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1585771724680-0573be5850b6?w=200&h=200&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1566489564590-8d4cc8da00c4?w=200&h=200&fit=crop&auto=format'
-    ];
-
     return `
         <div class="cart-page">
             <h1 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Корзина</h1>
             
             <div class="cart-items mb-4">
                 ${AppState.cart.map((item, index) => {
-                    const imageIndex = index % vinylImages.length;
-                    const imageUrl = vinylImages[imageIndex];
+                    const imageUrl = getProductImage(index, item.title);
                     
                     return `
                         <div class="card mb-3 cart-item" data-product-id="${item.id}">
@@ -509,6 +544,7 @@ function renderCartPage() {
                                     <img src="${imageUrl}" 
                                          class="img-fluid rounded-start" 
                                          alt="${item.title}"
+                                         onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=200&h=200&fit=crop&auto=format';"
                                          style="height: 150px; object-fit: cover;">
                                 </div>
                                 <div class="col-md-7">
@@ -861,12 +897,20 @@ function showDeliveryModal() {
                                     <div class="card mb-3">
                                         <div class="card-body">
                                             <h6>Товары (${getTotalCartItems()} шт.)</h6>
-                                            ${AppState.cart.slice(0, 3).map(item => `
-                                                <div class="d-flex justify-content-between small mb-1">
-                                                    <span>${item.title}</span>
-                                                    <span>×${item.quantity}</span>
-                                                </div>
-                                            `).join('')}
+                                            ${AppState.cart.slice(0, 3).map((item, index) => {
+                                                const imageUrl = getProductImage(index + 100);
+                                                return `
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <img src="${imageUrl}" 
+                                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" 
+                                                             alt="${item.title}">
+                                                        <div class="ms-2 flex-grow-1 d-flex justify-content-between">
+                                                            <span class="small">${item.title}</span>
+                                                            <span class="small fw-bold">×${item.quantity}</span>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
                                             ${AppState.cart.length > 3 ? `
                                                 <div class="text-muted small text-center">
                                                     ...и еще ${AppState.cart.length - 3} товар(ов)
